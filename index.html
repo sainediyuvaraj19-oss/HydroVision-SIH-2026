@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Urban Flood Nowcasting System | Vijayawada Drainage &amp; Rainfall Hydro-ML Engine</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<div class="app-layout">
+
+  <!-- ================================================================
+       LEFT SIDEBAR
+       ================================================================ -->
+  <aside class="app-sidebar" id="app-sidebar">
+
+    <div class="sidebar-brand">
+      <div class="brand-logo-icon">
+        <i class="fa-solid fa-water-ladder"></i>
+      </div>
+
+      <div class="brand-info">
+        <div class="brand-title">FloodCast AI</div>
+        <div class="brand-tag">Urban Nowcast v2.4</div>
+      </div>
+    </div>
+
+    <!-- CITY -->
+    <div class="sidebar-city-badge">
+      <i class="fa-solid fa-location-dot"></i>
+
+      <div class="city-badge-text">
+        <span class="city-name" id="sidebar-city-name">
+          Vijayawada, AP
+        </span>
+
+        <small class="city-country">
+          India &bull; Urban Drainage Grid
+        </small>
+      </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="sidebar-nav">
+
+      <div class="nav-item active" data-view="dashboard" id="nav-dashboard">
+        <i class="fa-solid fa-gauge-high nav-icon"></i>
+        <span>Dashboard</span>
+      </div>
+
+      <div class="nav-item" data-view="live-map" id="nav-live-map">
+        <i class="fa-solid fa-map-location-dot nav-icon"></i>
+        <span>Interactive GIS Map</span>
+        <span class="nav-pill-badge live">GIS</span>
+      </div>
+
+      <div class="nav-item" data-view="ml-prediction" id="nav-ml-prediction">
+        <i class="fa-solid fa-brain nav-icon"></i>
+        <span>ML Flood Prediction</span>
+      </div>
+
+      <div class="nav-item" data-view="safe-route" id="nav-safe-route">
+        <i class="fa-solid fa-route nav-icon"></i>
+        <span>Dynamic Safe Route</span>
+        <span class="nav-pill-badge route-badge">AI</span>
+      </div>
+
+      <div class="nav-item" data-view="graphs" id="nav-graphs">
+        <i class="fa-solid fa-chart-line nav-icon"></i>
+        <span>Sensor Trend Graphs</span>
+      </div>
+
+      <div class="nav-item" data-view="alerts" id="nav-alerts">
+        <i class="fa-solid fa-bell nav-icon"></i>
+        <span>Alerts &amp; Incidents</span>
+        <span class="nav-pill-badge alert" id="sidebar-alert-badge">0</span>
+      </div>
+
+      <div class="nav-item" data-view="settings" id="nav-settings">
+        <i class="fa-solid fa-sliders nav-icon"></i>
+        <span>Settings &amp; City</span>
+      </div>
+
+    </nav>
+
+    <div class="sidebar-footer-card">
+      <div class="sidebar-footer-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+
+      <div class="sidebar-footer-text">
+        <strong>Coupled Hydro-ML</strong>
+        <span>Rainfall &rarr; Runoff &rarr; Risk</span>
+      </div>
+
+      <div class="sidebar-footer-caption" id="backend-status-pill">
+        Checking Backend...
+      </div>
+    </div>
+
+  </aside>
+
+
+  <!-- ================================================================
+       MAIN VIEWPORT
+       ================================================================ -->
+  <main class="main-viewport">
+
+    <!-- TOP NAVIGATION -->
+    <header class="top-nav glass-panel">
+
+      <div class="top-left">
+
+        <div class="top-title-wrap">
+
+          <h1 class="top-title">
+            Urban Flood Nowcasting System
+          </h1>
+
+          <div class="top-subtitle">
+
+            <span class="sub-item">
+              <i class="fa-solid fa-satellite-dish"></i>
+              IoT Drainage Sensors
+            </span>
+
+            <span class="sub-sep">&bull;</span>
+
+            <span class="sub-item">
+              <i class="fa-solid fa-brain"></i>
+              ML Risk Prediction
+            </span>
+
+            <span class="sub-sep">&bull;</span>
+
+            <span class="sub-item location-tag" id="top-location-tag">
+              <i class="fa-solid fa-location-dot"></i>
+              Vijayawada, Andhra Pradesh
+            </span>
+
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- TOP ACTIONS -->
+      <div class="top-actions">
+
+        <button
+          type="button"
+          id="demo-mode-btn"
+          class="action-btn demo-btn"
+          title="Launch 4-Stage Hackathon Demonstration Scenario">
+          <i class="fa-solid fa-play"></i>
+          <span>Start 4-Stage Demo</span>
+        </button>
+
+        <button
+          type="button"
+          id="btn-simulate-sensor-update"
+          class="action-btn sim-update-btn"
+          title="Simulate Real-time Sensor Telemetry Update">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Simulate Sensor Update</span>
+        </button>
+
+        <button
+          type="button"
+          id="btn-toggle-blockage"
+          class="action-btn blockage-btn"
+          title="Simulate Silt/Debris Blockage in Active Drainage Conduit">
+          <i class="fa-solid fa-road-barrier"></i>
+          <span>Simulate Drain Blockage</span>
+        </button>
+
+        <button
+          type="button"
+          id="map-style-toggle"
+          class="action-btn icon-only-btn"
+          title="Toggle Basemap">
+          <i class="fa-solid fa-layer-group"></i>
+          <span id="map-style-text">Dark</span>
+        </button>
+
+        <div class="system-meta-wrap">
+
+          <span class="status-online-pill">
+            <span class="pulse-dot"></span>
+            <span>Live Sensor Grid</span>
+          </span>
+
+          <span class="live-clock mono-num" id="system-clock">
+            --:--:--
+          </span>
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- DEMO BANNER -->
+    <div
+      id="demo-mode-banner"
+      class="demo-banner glass-panel"
+      style="display: none;">
+
+      <div class="demo-banner-left">
+
+        <div class="demo-pulse-icon">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+
+        <div>
+          <div class="demo-banner-title">
+            HACKATHON DEMO MODE ACTIVE
+          </div>
+
+          <div
+            class="demo-banner-desc"
+            id="demo-stage-label">
+            Stage 1: Normal Pre-Monsoon (Low Rainfall -> Low Risk)
+          </div>
+        </div>
+
+      </div>
+
+      <div class="demo-stepper-pills">
+        <span class="demo-stage-pill" id="demo-stage-pill-1">
+          1. Low Risk
+        </span>
+
+        <span class="demo-stage-pill" id="demo-stage-pill-2">
+          2. Moderate Risk
+        </span>
+
+        <span class="demo-stage-pill" id="demo-stage-pill-3">
+          3. High Risk
+        </span>
+
+        <span class="demo-stage-pill" id="demo-stage-pill-4">
+          4. Critical Risk (Blocked)
+        </span>
+      </div>
+
+      <div class="demo-timer-wrap">
+        <div
+          class="demo-timer-bar"
+          id="demo-timer-progress">
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ================================================================
+         DASHBOARD
+         ================================================================ -->
+    <section
+      id="view-dashboard"
+      class="view-container active">
+
+      <!-- STATISTICS -->
+      <div class="stats-counter-bar">
+
+        <div class="stat-card total">
+          <div class="stat-icon">
+            <i class="fa-solid fa-draw-polygon"></i>
+          </div>
+
+          <div class="stat-info">
+            <span class="stat-num mono-num" id="stat-total-zones">
+              8
+            </span>
+
+            <span class="stat-label">
+              Total Monitoring Zones
+            </span>
+          </div>
+        </div>
+
+
+        <div class="stat-card safe">
+          <div class="stat-icon">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+
+          <div class="stat-info">
+            <span class="stat-num mono-num" id="stat-low-zones">
+              0
+            </span>
+
+            <span class="stat-label">
+              Low Risk Zones
+            </span>
+          </div>
+        </div>
+
+
+        <div class="stat-card mod">
+          <div class="stat-icon">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+
+          <div class="stat-info">
+            <span class="stat-num mono-num" id="stat-mod-zones">
+              0
+            </span>
+
+            <span class="stat-label">
+              Moderate Risk Zones
+            </span>
+          </div>
+        </div>
+
+
+        <div class="stat-card high">
+          <div class="stat-icon">
+            <i class="fa-solid fa-cloud-showers-heavy"></i>
+          </div>
+
+          <div class="stat-info">
+            <span class="stat-num mono-num" id="stat-high-zones">
+              0
+            </span>
+
+            <span class="stat-label">
+              High Risk Zones
+            </span>
+          </div>
+        </div>
+
+
+        <div class="stat-card crit">
+          <div class="stat-icon">
+            <i class="fa-solid fa-bell-exclamation"></i>
+          </div>
+
+          <div class="stat-info">
+            <span class="stat-num mono-num" id="stat-crit-zones">
+              0
+            </span>
+
+            <span class="stat-label">
+              Critical Zones
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- ZONE SELECTOR -->
+      <div class="card zone-control-strip">
+
+        <div class="zone-strip-left">
+
+          <div class="strip-icon">
+            <i class="fa-solid fa-location-crosshairs"></i>
+          </div>
+
+          <div>
+
+            <span class="strip-label">
+              Active Drainage Catchment:
+            </span>
+
+            <div class="select-wrapper">
+
+              <select
+                id="zone-select"
+                class="zone-dropdown"
+                aria-label="Select Active Zone">
+              </select>
+
+              <i class="fa-solid fa-chevron-down select-chevron"></i>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="zone-strip-right">
+
+          <button
+            type="button"
+            class="btn-text-action"
+            id="btn-open-calc-modal"
+            title="Inspect Mathematical Score Breakdown">
+
+            <i class="fa-solid fa-calculator"></i>
+            <span>View Calculation Breakdown</span>
+
+          </button>
+
+          <button
+            type="button"
+            class="action-icon-btn"
+            id="btn-manual-refresh"
+            title="Force Refresh Telemetry">
+
+            <i class="fa-solid fa-arrows-rotate"></i>
+
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- SENSOR METRICS -->
+      <div class="metrics-grid-4">
+
+        <!-- RAIN -->
+        <div class="card metric-card">
+
+          <div class="metric-top">
+
+            <div class="metric-icon-box rain-accent">
+              <i class="fa-solid fa-cloud-showers-heavy"></i>
+            </div>
+
+            <div class="metric-heading">
+              <span class="metric-title">
+                Rainfall Intensity
+              </span>
+
+              <span class="metric-sub-type">
+                Acoustic / Pluviometer
+              </span>
+            </div>
+
+            <span class="metric-weight-tag">
+              Weight: 30%
+            </span>
+
+          </div>
+
+          <div class="metric-body">
+
+            <div class="metric-val-wrap">
+
+              <span
+                class="val-number mono-num"
+                id="metric-rain-val">
+                35.0
+              </span>
+
+              <span class="val-unit">
+                mm/hr
+              </span>
+
+            </div>
+
+            <div class="metric-track">
+              <div
+                class="metric-fill rain-fill"
+                id="metric-rain-bar"
+                style="width: 29%;">
+              </div>
+            </div>
+
+            <div class="metric-range-meta">
+              <span>0 mm/hr</span>
+              <span class="warn-mark">&gt;60 Heavy</span>
+              <span>120 Max</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- WATER -->
+        <div class="card metric-card">
+
+          <div class="metric-top">
+
+            <div class="metric-icon-box water-accent">
+              <i class="fa-solid fa-water"></i>
+            </div>
+
+            <div class="metric-heading">
+
+              <span class="metric-title">
+                Drain Water Level
+              </span>
+
+              <span class="metric-sub-type">
+                Ultrasonic Sump Gauge
+              </span>
+
+            </div>
+
+            <span class="metric-weight-tag">
+              Weight: 30%
+            </span>
+
+          </div>
+
+          <div class="metric-body">
+
+            <div class="metric-val-wrap">
+
+              <span
+                class="val-number mono-num"
+                id="metric-water-val">
+                40
+              </span>
+
+              <span class="val-unit">
+                cm
+              </span>
+
+              <span
+                class="val-depth mono-num"
+                id="metric-water-depth">
+                (0.40 m)
+              </span>
+
+            </div>
+
+            <div class="metric-track">
+
+              <div
+                class="metric-fill water-fill"
+                id="metric-water-bar"
+                style="width: 40%;">
+              </div>
+
+            </div>
+
+            <div class="metric-range-meta">
+              <span>0 cm</span>
+              <span class="warn-mark">&gt;70 Surcharge</span>
+              <span>100 Max</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- PRESSURE -->
+        <div class="card metric-card">
+
+          <div class="metric-top">
+
+            <div class="metric-icon-box pressure-accent">
+              <i class="fa-solid fa-gauge"></i>
+            </div>
+
+            <div class="metric-heading">
+
+              <span class="metric-title">
+                Conduit Pressure
+              </span>
+
+              <span class="metric-sub-type">
+                Piezometric Backpressure
+              </span>
+
+            </div>
+
+            <span class="metric-weight-tag">
+              Weight: 15%
+            </span>
+
+          </div>
+
+          <div class="metric-body">
+
+            <div class="metric-val-wrap">
+
+              <span
+                class="val-number mono-num"
+                id="metric-pressure-val">
+                28.0
+              </span>
+
+              <span class="val-unit">
+                kPa
+              </span>
+
+            </div>
+
+            <div class="metric-track">
+
+              <div
+                class="metric-fill pressure-fill"
+                id="metric-pressure-bar"
+                style="width: 40%;">
+              </div>
+
+            </div>
+
+            <div class="metric-range-meta">
+              <span>0 kPa</span>
+              <span class="warn-mark">&gt;45 High Head</span>
+              <span>70 Max</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- CAPACITY -->
+        <div class="card metric-card">
+
+          <div class="metric-top">
+
+            <div class="metric-icon-box cap-accent">
+              <i class="fa-solid fa-network-wired"></i>
+            </div>
+
+            <div class="metric-heading">
+
+              <span class="metric-title">
+                Drainage Utilization
+              </span>
+
+              <span class="metric-sub-type">
+                Inflow vs Conduit Cap
+              </span>
+
+            </div>
+
+            <span class="metric-weight-tag">
+              Weight: 25%
+            </span>
+
+          </div>
+
+          <div class="metric-body">
+
+            <div class="metric-val-wrap">
+
+              <span
+                class="val-number mono-num"
+                id="metric-util-val">
+                44%
+              </span>
+
+              <span class="val-sub-detail mono-num">
+                Inflow:
+                <span id="metric-inflow-val">
+                  49 L/s
+                </span>
+              </span>
+
+            </div>
+
+            <div class="metric-track">
+
+              <div
+                class="metric-fill util-fill"
+                id="metric-util-bar"
+                style="width: 44%;">
+              </div>
+
+            </div>
+
+            <div class="metric-range-meta">
+
+              <span>
+                Cap:
+                <strong id="metric-cap-val">
+                  110
+                </strong>
+                L/s
+              </span>
+
+              <span class="warn-mark">
+                &gt;80% Warning
+              </span>
+
+              <span>
+                100% Overflow
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- MANUAL SENSOR CONTROLS -->
+      <div class="card manual-controls-card">
+
+        <div class="card-header">
+
+          <div class="header-title">
+            <i class="fa-solid fa-sliders header-icon"></i>
+            <span>
+              Manual Sensor Controls &amp; Dynamic Override
+            </span>
+          </div>
+
+          <span class="header-badge">
+            Real-Time Recalculation Engine
+          </span>
+
+        </div>
+
+
+        <div class="controls-grid-4">
+
+          <div class="control-input-group">
+
+            <div class="control-label-row">
+              <label for="input-rain-slider">
+                Rainfall Intensity (mm/hr):
+              </label>
+
+              <input
+                type="number"
+                id="input-rain-number"
+                class="control-num-box mono-num"
+                min="0"
+                max="150"
+                value="35"
+                step="1" />
+            </div>
+
+            <input
+              type="range"
+              id="input-rain-slider"
+              class="range-slider rain-slider"
+              min="0"
+              max="150"
+              value="35"
+              step="1" />
+
+          </div>
+
+
+          <div class="control-input-group">
+
+            <div class="control-label-row">
+              <label for="input-water-slider">
+                Water Level (cm):
+              </label>
+
+              <input
+                type="number"
+                id="input-water-number"
+                class="control-num-box mono-num"
+                min="0"
+                max="120"
+                value="40"
+                step="1" />
+            </div>
+
+            <input
+              type="range"
+              id="input-water-slider"
+              class="range-slider water-slider"
+              min="0"
+              max="120"
+              value="40"
+              step="1" />
+
+          </div>
+
+
+          <div class="control-input-group">
+
+            <div class="control-label-row">
+              <label for="input-pressure-slider">
+                Drainage Pressure (kPa):
+              </label>
+
+              <input
+                type="number"
+                id="input-pressure-number"
+                class="control-num-box mono-num"
+                min="0"
+                max="80"
+                value="28"
+                step="0.5" />
+            </div>
+
+            <input
+              type="range"
+              id="input-pressure-slider"
+              class="range-slider pressure-slider"
+              min="0"
+              max="80"
+              value="28"
+              step="0.5" />
+
+          </div>
+
+
+          <div class="control-input-group">
+
+            <div class="control-label-row">
+              <label for="input-cap-slider">
+                Drainage Capacity (L/s):
+              </label>
+
+              <input
+                type="number"
+                id="input-cap-number"
+                class="control-num-box mono-num"
+                min="20"
+                max="250"
+                value="110"
+                step="5" />
+            </div>
+
+            <input
+              type="range"
+              id="input-cap-slider"
+              class="range-slider cap-slider"
+              min="20"
+              max="250"
+              value="110"
+              step="5" />
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================================================================
+           FLOOD RISK + MAP
+           ================================================================ -->
+      <div class="upper-dual-grid">
+
+
+        <!-- FLOOD RISK -->
+        <div class="card flood-risk-meter-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+              <i class="fa-solid fa-triangle-exclamation header-icon"></i>
+              <span>Flood Risk Meter</span>
+            </div>
+
+            <span class="model-badge">
+              Coupled Hydro-Score (0-100)
+            </span>
+
+          </div>
+
+
+          <div class="meter-card-body">
+
+            <div class="gauge-container">
+
+              <div
+                class="gauge-conic"
+                id="gauge-conic">
+
+                <div class="gauge-center">
+
+                  <span
+                    class="gauge-score mono-num"
+                    id="gauge-score-text">
+                    30
+                  </span>
+
+                  <small class="gauge-max">
+                    / 100
+                  </small>
+
+                  <span
+                    class="gauge-status"
+                    id="gauge-status-text">
+                    LOW
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="risk-assessment-box"
+              id="risk-box">
+
+              <div
+                class="risk-tag"
+                id="risk-tag">
+                🟢 LOW RISK
+              </div>
+
+              <div
+                class="risk-desc"
+                id="risk-desc-text">
+
+                Drainage conduits operating normally.
+                Water inflow is within conduit capacity.
+
+              </div>
+
+
+              <div class="scale-bar-track">
+
+                <div class="scale-bar-fill"></div>
+
+                <div
+                  class="scale-marker-pin"
+                  id="scale-marker-pin"
+                  style="left: 30%;">
+                </div>
+
+              </div>
+
+
+              <div class="scale-labels">
+
+                <span class="sc-low">
+                  🟢 Low (0-30)
+                </span>
+
+                <span class="sc-mod">
+                  🟡 Mod (31-50)
+                </span>
+
+                <span class="sc-high">
+                  🟠 High (51-75)
+                </span>
+
+                <span class="sc-crit">
+                  🔴 Crit (76-100)
+                </span>
+
+              </div>
+
+
+              <div class="coupling-math-note">
+
+                <code>
+                  Estimated Runoff = Rain × C × Area
+                  • Score = Σ(wᵢ × Normᵢ)
+                </code>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- MAP -->
+        <div class="card map-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-earth-asia header-icon"></i>
+
+              <span id="dashboard-map-title">
+                Interactive Urban Flood Map &bull; Vijayawada, AP
+              </span>
+
+            </div>
+
+            <div class="map-card-controls">
+
+              <span class="map-city-pill">
+                OpenStreetMap GIS
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="map-canvas-wrapper">
+
+            <div
+              id="dashboard-map"
+              class="embedded-leaflet-map"
+              aria-label="Interactive City Flood Map">
+            </div>
+
+
+            <div class="embedded-map-legend">
+
+              <div class="mini-leg-title">
+                Risk Severity:
+              </div>
+
+              <div class="mini-leg-row">
+
+                <span class="dot green"></span>
+                Low (0-30)
+
+                <span class="dot yellow"></span>
+                Mod (31-50)
+
+                <span class="dot orange"></span>
+                High (51-75)
+
+                <span class="dot red"></span>
+                Crit (76-100)
+
+              </div>
+
+              <div class="mini-leg-row sub-row">
+
+                <span>
+                  <i class="fa-solid fa-satellite-dish"></i>
+                  Click any zone marker for telemetry
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ZONE DETAILS -->
+      <div class="card zone-details-card">
+
+        <div class="card-header">
+
+          <div class="header-title">
+
+            <i class="fa-solid fa-id-card-clip header-icon"></i>
+
+            <span>
+              Zone Diagnostics:
+              <strong id="zd-zone-id">VJA-01</strong>
+              &mdash;
+              <span id="zd-zone-name">
+                One Town Commercial Area
+              </span>
+            </span>
+
+          </div>
+
+          <span
+            class="status-badge"
+            id="zd-status">
+            LOW RISK
+          </span>
+
+        </div>
+
+
+        <div class="zone-details-grid">
+
+          <div class="zd-item">
+            <span class="zd-label">Location:</span>
+            <span class="zd-val" id="zd-location">
+              [16.5180° N, 80.6120° E] / Old Town Market Zone
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Rainfall:</span>
+            <span class="zd-val mono-num" id="zd-rainfall">
+              35.0 mm/hr
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Water Level:</span>
+            <span class="zd-val mono-num" id="zd-water-level">
+              40 cm
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Pressure:</span>
+            <span class="zd-val mono-num" id="zd-pressure">
+              28.0 kPa
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Drainage Capacity:</span>
+            <span class="zd-val mono-num" id="zd-capacity">
+              110 L/s
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Estimated Inflow:</span>
+            <span class="zd-val mono-num highlight" id="zd-inflow">
+              49 L/s
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Drainage Utilization:</span>
+            <span class="zd-val mono-num" id="zd-utilization">
+              44%
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">Flood Risk Score:</span>
+            <span class="zd-val mono-num highlight-score" id="zd-risk-score">
+              30/100
+            </span>
+          </div>
+
+          <div class="zd-item">
+            <span class="zd-label">
+              Predicted Flood Probability:
+            </span>
+
+            <span
+              class="zd-val mono-num"
+              id="zd-predicted-prob">
+              20%
+            </span>
+
+          </div>
+
+          <div class="zd-item full-width">
+
+            <span class="zd-label">
+              Recommended Action:
+            </span>
+
+            <span
+              class="zd-val action-text"
+              id="zd-action">
+              Normal drainage flow. Monitor stormwater inlets.
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- GRAPHS -->
+      <div class="graphs-grid-2x2">
+
+        <div class="card graph-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+              <i class="fa-solid fa-cloud-rain header-icon"></i>
+              <span>Rainfall Intensity Trend (mm/hr)</span>
+            </div>
+
+          </div>
+
+          <div class="chart-box">
+            <canvas id="chart-rainfall"></canvas>
+          </div>
+
+        </div>
+
+
+        <div class="card graph-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+              <i class="fa-solid fa-water header-icon"></i>
+              <span>Canal Water Level Trend (cm)</span>
+            </div>
+
+          </div>
+
+          <div class="chart-box">
+            <canvas id="chart-water-level"></canvas>
+          </div>
+
+        </div>
+
+
+        <div class="card graph-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+              <i class="fa-solid fa-gauge header-icon"></i>
+              <span>Conduit Backpressure Trend (kPa)</span>
+            </div>
+
+          </div>
+
+          <div class="chart-box">
+            <canvas id="chart-pressure"></canvas>
+          </div>
+
+        </div>
+
+
+        <div class="card graph-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+              <i class="fa-solid fa-triangle-exclamation header-icon"></i>
+              <span>Inflow vs Drainage Capacity (L/s)</span>
+            </div>
+
+            <span class="header-badge warn">
+              Surcharge Threshold
+            </span>
+
+          </div>
+
+          <div class="chart-box">
+            <canvas id="chart-drainage-capacity"></canvas>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTTOM ROW -->
+      <div class="bottom-dual-grid">
+
+        <div class="card table-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-table-list header-icon"></i>
+
+              <span id="zone-table-title">
+                Catchment Status Overview &bull; Vijayawada Urban
+              </span>
+
+            </div>
+
+          </div>
+
+          <div class="table-responsive">
+
+            <table
+              class="status-table"
+              id="zone-status-table">
+
+              <thead>
+
+                <tr>
+                  <th>Zone</th>
+                  <th>Risk</th>
+                  <th>Score</th>
+                  <th>Utilization</th>
+                  <th>Capacity</th>
+                  <th>Action</th>
+                </tr>
+
+              </thead>
+
+              <tbody id="zone-table-body"></tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+
+        <div class="card log-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-terminal header-icon"></i>
+
+              <span>Nowcasting Audit Log</span>
+
+            </div>
+
+            <span class="live-stream-badge">
+              <span class="pulse-dot"></span>
+              Ingesting
+            </span>
+
+          </div>
+
+          <div
+            class="system-log-terminal"
+            id="system-log-feed">
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         FULLSCREEN GIS MAP
+         ================================================================ -->
+    <section
+      id="view-live-map"
+      class="view-container">
+
+      <div class="fullscreen-map-wrapper">
+
+        <div class="fs-map-banner glass-panel">
+
+          <div
+            class="fs-banner-title"
+            id="fullscreen-map-title">
+
+            <i class="fa-solid fa-earth-americas"></i>
+            Vijayawada Urban Catchments &bull;
+            Real-time GIS Surcharge Layer
+
+          </div>
+
+          <div class="fs-banner-actions">
+
+            <button
+              type="button"
+              class="btn-text-action"
+              onclick="window.app.simulateSensorUpdate()">
+
+              <i class="fa-solid fa-arrows-rotate"></i>
+              Update Telemetry
+
+            </button>
+
+          </div>
+
+        </div>
+
+        <div class="map-container-fill">
+
+          <p class="map-hint">
+
+            <i class="fa-solid fa-info-circle"></i>
+
+            Use the interactive map in the Dashboard to examine
+            zone boundaries and click sensors for telemetry.
+
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         ML PREDICTION
+         ================================================================ -->
+    <section
+      id="view-ml-prediction"
+      class="view-container">
+
+      <div class="view-inner-content">
+
+        <div class="card ml-hero-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-brain header-icon"></i>
+
+              <span>
+                ML Flood Prediction Service Architecture
+              </span>
+
+            </div>
+
+            <span class="model-badge">
+              Endpoint: POST /api/predict
+            </span>
+
+          </div>
+
+
+          <div class="ml-hero-body">
+
+            <div class="ml-hero-desc">
+
+              <p>
+                The system couples rainfall hydrology with urban
+                sewer hydraulic backpressure using a supervised
+                learning ensemble
+                (Logistic Regression + Random Forest Surcharge Classifier).
+              </p>
+
+            </div>
+
+
+            <div class="ml-stats-row">
+
+              <div class="ml-metric-box">
+
+                <span class="ml-box-title">
+                  Predicted Probability
+                </span>
+
+                <span
+                  class="ml-box-val mono-num"
+                  id="ml-prob-val">
+                  20%
+                </span>
+
+                <div class="ml-prob-track">
+                  <div
+                    class="ml-prob-fill"
+                    id="ml-prob-fill"
+                    style="width:20%;">
+                  </div>
+                </div>
+
+              </div>
+
+
+              <div class="ml-metric-box">
+
+                <span class="ml-box-title">
+                  Flood Risk Score
+                </span>
+
+                <span
+                  class="ml-box-val mono-num"
+                  id="ml-risk-score-val">
+                  30/100
+                </span>
+
+                <small class="ml-box-sub">
+                  Coupled Multi-criteria Score
+                </small>
+
+              </div>
+
+
+              <div class="ml-metric-box">
+
+                <span class="ml-box-title">
+                  Predicted Category
+                </span>
+
+                <span
+                  class="ml-box-val"
+                  id="ml-risk-category-val">
+                  LOW
+                </span>
+
+                <small class="ml-box-sub">
+                  Classification Target
+                </small>
+
+              </div>
+
+
+              <div class="ml-metric-box">
+
+                <span class="ml-box-title">
+                  ROC-AUC Score
+                </span>
+
+                <span class="ml-box-val mono-num">
+                  0.945
+                </span>
+
+                <small class="ml-box-sub">
+                  Trained on Historical Monsoons
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="feature-importance-box">
+
+              <h3>
+                Feature Importance Distribution
+                (Weighting Configuration)
+              </h3>
+
+              <div class="fi-bars">
+
+                <div class="fi-bar-item">
+                  <span class="fi-label">
+                    Rainfall Intensity (mm/hr)
+                  </span>
+
+                  <div class="fi-track">
+                    <div
+                      class="fi-fill rain"
+                      style="width:30%;">
+                    </div>
+                  </div>
+
+                  <span class="fi-num mono-num">
+                    30%
+                  </span>
+                </div>
+
+
+                <div class="fi-bar-item">
+                  <span class="fi-label">
+                    Drain Water Level (cm)
+                  </span>
+
+                  <div class="fi-track">
+                    <div
+                      class="fi-fill water"
+                      style="width:30%;">
+                    </div>
+                  </div>
+
+                  <span class="fi-num mono-num">
+                    30%
+                  </span>
+                </div>
+
+
+                <div class="fi-bar-item">
+                  <span class="fi-label">
+                    Drainage Utilization (%)
+                  </span>
+
+                  <div class="fi-track">
+                    <div
+                      class="fi-fill util"
+                      style="width:25%;">
+                    </div>
+                  </div>
+
+                  <span class="fi-num mono-num">
+                    25%
+                  </span>
+                </div>
+
+
+                <div class="fi-bar-item">
+                  <span class="fi-label">
+                    Drainage Pressure (kPa)
+                  </span>
+
+                  <div class="fi-track">
+                    <div
+                      class="fi-fill pressure"
+                      style="width:15%;">
+                    </div>
+                  </div>
+
+                  <span class="fi-num mono-num">
+                    15%
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="api-schema-box">
+
+              <h3>
+                REST API Interface
+                (Python Backend / External ML Service)
+              </h3>
+
+              <div class="code-split">
+
+                <div>
+
+                  <strong>
+                    Request: POST /api/predict
+                  </strong>
+
+                  <pre class="mono-num"><code>{
+  "rainfallIntensity": 72,
+  "waterLevel": 68,
+  "pressure": 42,
+  "drainageCapacity": 100
+}</code></pre>
+
+                </div>
+
+
+                <div>
+
+                  <strong>
+                    Response: 200 OK
+                  </strong>
+
+                  <pre class="mono-num"><code>{
+  "riskScore": 74,
+  "riskLevel": "HIGH",
+  "predictedFloodProbability": 78,
+  "confidence": 0.945
+}</code></pre>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         SAFE ROUTE
+         ================================================================ -->
+    <section
+      id="view-safe-route"
+      class="view-container">
+
+      <div class="view-inner-content">
+
+        <div class="card safe-route-card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-route header-icon"></i>
+
+              <span>
+                Dynamic Safe Route Planner
+                (Flood Hazard Avoidance)
+              </span>
+
+            </div>
+
+            <span class="model-badge">
+              AI Detour Engine
+            </span>
+
+          </div>
+
+
+          <div class="route-body">
+
+            <p class="route-desc">
+
+              When urban catchments reach
+              <strong>HIGH</strong> or
+              <strong>CRITICAL</strong> flood risk,
+              the routing engine identifies submerged
+              arterials and calculates a safe detour
+              around inundated zones.
+
+            </p>
+
+
+            <div class="route-selectors-row">
+
+              <div class="route-select-box">
+
+                <label for="route-start-select">
+                  <i class="fa-solid fa-play"></i>
+                  Start Location:
+                </label>
+
+                <select
+                  id="route-start-select"
+                  class="zone-dropdown">
+
+                  <option value="VJA-01">
+                    VJA-01: One Town Commercial
+                  </option>
+
+                  <option value="VJA-02">
+                    VJA-02: Benz Circle Arterial
+                  </option>
+
+                  <option value="VJA-03">
+                    VJA-03: Governorpet Catchment
+                  </option>
+
+                  <option value="VJA-04">
+                    VJA-04: Patamata Residential
+                  </option>
+
+                  <option value="VJA-05">
+                    VJA-05: Ramavarappadu Junction
+                  </option>
+
+                  <option value="VJA-06">
+                    VJA-06: Moghalrajpuram Lowland
+                  </option>
+
+                  <option value="VJA-07">
+                    VJA-07: Kanuru Urban Catchment
+                  </option>
+
+                  <option value="VJA-08">
+                    VJA-08: Bhavanipuram Drainage Hub
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="route-select-box">
+
+                <label for="route-dest-select">
+                  <i class="fa-solid fa-flag-checkered"></i>
+                  Destination:
+                </label>
+
+                <select
+                  id="route-dest-select"
+                  class="zone-dropdown">
+
+                  <option value="VJA-05" selected>
+                    VJA-05: Ramavarappadu Junction
+                  </option>
+
+                  <option value="VJA-01">
+                    VJA-01: One Town Commercial
+                  </option>
+
+                  <option value="VJA-02">
+                    VJA-02: Benz Circle Arterial
+                  </option>
+
+                  <option value="VJA-03">
+                    VJA-03: Governorpet Catchment
+                  </option>
+
+                  <option value="VJA-04">
+                    VJA-04: Patamata Residential
+                  </option>
+
+                  <option value="VJA-06">
+                    VJA-06: Moghalrajpuram Lowland
+                  </option>
+
+                  <option value="VJA-07">
+                    VJA-07: Kanuru Urban Catchment
+                  </option>
+
+                  <option value="VJA-08">
+                    VJA-08: Bhavanipuram Drainage Hub
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="route-btn-box">
+
+                <button
+                  type="button"
+                  class="action-btn sim-update-btn"
+                  id="btn-calculate-safe-route">
+
+                  <i class="fa-solid fa-compass"></i>
+                  Calculate Safe Route
+
+                </button>
+
+                <button
+                  type="button"
+                  class="action-btn"
+                  id="btn-clear-safe-route">
+
+                  <i class="fa-solid fa-xmark"></i>
+                  Clear
+
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div
+              id="route-result-card"
+              class="route-result-card"
+              style="display:none;">
+
+              <div class="result-header">
+
+                <span
+                  id="route-detour-status"
+                  class="detour-badge">
+
+                  🟢 DIRECT ROUTE SAFE
+
+                </span>
+
+              </div>
+
+              <div class="result-details-grid">
+
+                <div>
+                  <strong>Origin:</strong>
+                  <span id="route-start-name">--</span>
+                </div>
+
+                <div>
+                  <strong>Destination:</strong>
+                  <span id="route-dest-name">--</span>
+                </div>
+
+                <div class="full">
+
+                  <strong>
+                    Avoided Flood Hazards:
+                  </strong>
+
+                  <span
+                    id="route-avoided-list"
+                    class="avoided-text">
+                    --
+                  </span>
+
+                </div>
+
+              </div>
+
+              <p class="map-view-hint">
+
+                <i class="fa-solid fa-map-location-dot"></i>
+
+                The safe route is rendered directly
+                on the GIS map.
+
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         GRAPHS
+         ================================================================ -->
+    <section
+      id="view-graphs"
+      class="view-container">
+
+      <div class="view-inner-content">
+
+        <div class="card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-chart-area header-icon"></i>
+
+              <span>
+                Multi-Sensor Time-Series Analysis
+              </span>
+
+            </div>
+
+          </div>
+
+          <p style="padding:16px;color:#94a9c6;">
+
+            Historical telemetry streams are continuously logged.
+            Return to the <strong>Dashboard</strong> to view all
+            synchronized real-time graphs.
+
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         ALERTS
+         ================================================================ -->
+    <section
+      id="view-alerts"
+      class="view-container">
+
+      <div class="view-inner-content">
+
+        <div class="card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-triangle-exclamation header-icon"></i>
+
+              <span>
+                Municipal Flood Alarms &amp;
+                Operational Audit Trail
+              </span>
+
+            </div>
+
+          </div>
+
+          <div
+            class="alerts-stream-container"
+            id="full-alerts-stream">
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         SETTINGS
+         ================================================================ -->
+    <section
+      id="view-settings"
+      class="view-container">
+
+      <div class="view-inner-content">
+
+        <div class="card">
+
+          <div class="card-header">
+
+            <div class="header-title">
+
+              <i class="fa-solid fa-sliders header-icon"></i>
+
+              <span>
+                System Configuration &amp;
+                City Selection
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="settings-grid">
+
+            <div class="setting-item">
+
+              <label for="settings-city-select">
+                Select Active Urban Area:
+              </label>
+
+              <select
+                id="settings-city-select"
+                class="setting-select">
+
+                <option value="Guntur">
+                  Guntur, Andhra Pradesh, India
+                </option>
+
+                <option
+                  value="Vijayawada"
+                  selected>
+                  Vijayawada, Andhra Pradesh, India
+                </option>
+
+                <option value="Hyderabad">
+                  Hyderabad, Telangana, India
+                </option>
+
+              </select>
+
+              <small style="color:#627b9c;margin-top:4px;display:block;">
+
+                Loads geographical coordinates and
+                drainage conduits for the chosen
+                metropolitan region.
+
+              </small>
+
+            </div>
+
+
+            <div class="setting-item">
+
+              <label>
+                Sampling Frequency:
+              </label>
+
+              <select class="setting-select">
+
+                <option value="4000" selected>
+                  4 seconds (Real-time telemetry)
+                </option>
+
+                <option value="8000">
+                  8 seconds (Battery Saver)
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- ================================================================
+     CALCULATION MODAL
+     ================================================================ -->
+<div
+  class="calc-modal-backdrop"
+  id="calc-breakdown-modal">
+
+  <div class="calc-modal-card glass-panel">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+
+        <i class="fa-solid fa-calculator"></i>
+
+        <span>
+          Transparent Flood Risk Calculation Engine
+        </span>
+
+      </div>
+
+      <button
+        type="button"
+        class="modal-close-btn"
+        id="btn-close-calc-modal">
+        &times;
+      </button>
+
+    </div>
+
+
+    <div class="modal-body">
+
+      <div class="calc-formula-section">
+
+        <h4>
+          1. Prototype Runoff &amp;
+          Drainage Utilization Formulas
+        </h4>
+
+        <div class="formula-box">
+
+          <code>
+            Estimated Runoff (L/s) =
+            Rainfall (mm/hr) × Runoff Coeff (C) ×
+            Area (km²) × Scale
+          </code>
+
+          <code>
+            Drainage Utilization (%) =
+            (Estimated Inflow / Drainage Capacity) × 100
+          </code>
+
+        </div>
+
+      </div>
+
+
+      <div class="calc-steps-table">
+
+        <h4>
+          2. Multi-Sensor Normalization &amp;
+          Contribution Breakdown
+        </h4>
+
+        <table class="breakdown-table">
+
+          <thead>
+
+            <tr>
+              <th>Sensor Indicator</th>
+              <th>Raw Reading</th>
+              <th>Normalized (0-100)</th>
+              <th>Weight</th>
+              <th>Score Contribution</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            <tr>
+
+              <td>
+                <i class="fa-solid fa-cloud-showers-heavy"></i>
+                Rainfall Intensity
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-raw-rain">
+                35 mm/hr
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-norm-rain">
+                29.2%
+              </td>
+
+              <td class="mono-num">
+                30%
+              </td>
+
+              <td
+                class="mono-num highlight"
+                id="cb-contrib-rain">
+                +8.8
+              </td>
+
+            </tr>
+
+
+            <tr>
+
+              <td>
+                <i class="fa-solid fa-water"></i>
+                Water Level
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-raw-water">
+                40 cm
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-norm-water">
+                40.0%
+              </td>
+
+              <td class="mono-num">
+                30%
+              </td>
+
+              <td
+                class="mono-num highlight"
+                id="cb-contrib-water">
+                +12.0
+              </td>
+
+            </tr>
+
+
+            <tr>
+
+              <td>
+                <i class="fa-solid fa-network-wired"></i>
+                Drainage Utilization
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-raw-util">
+                44%
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-norm-util">
+                44.0%
+              </td>
+
+              <td class="mono-num">
+                25%
+              </td>
+
+              <td
+                class="mono-num highlight"
+                id="cb-contrib-util">
+                +11.0
+              </td>
+
+            </tr>
+
+
+            <tr>
+
+              <td>
+                <i class="fa-solid fa-gauge"></i>
+                Conduit Pressure
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-raw-press">
+                28 kPa
+              </td>
+
+              <td
+                class="mono-num"
+                id="cb-norm-press">
+                40.0%
+              </td>
+
+              <td class="mono-num">
+                15%
+              </td>
+
+              <td
+                class="mono-num highlight"
+                id="cb-contrib-press">
+                +6.0
+              </td>
+
+            </tr>
+
+          </tbody>
+
+
+          <tfoot>
+
+            <tr>
+
+              <td colspan="4">
+                <strong>
+                  Final Combined Flood Risk Score:
+                </strong>
+              </td>
+
+              <td
+                class="mono-num total-score-cell"
+                id="cb-total-score">
+                38 / 100
+              </td>
+
+            </tr>
+
+
+            <tr>
+
+              <td colspan="4">
+                <strong>
+                  Risk Status Classification:
+                </strong>
+              </td>
+
+              <td
+                class="mono-num total-score-cell"
+                id="cb-final-class">
+                MODERATE RISK
+              </td>
+
+            </tr>
+
+          </tfoot>
+
+        </table>
+
+      </div>
+
+
+      <div class="calc-thresholds-guide">
+
+        <h4>
+          3. Standard Classification Scale
+        </h4>
+
+        <div class="threshold-pills">
+
+          <span class="tp-item safe">
+            0 &ndash; 30: LOW RISK
+          </span>
+
+          <span class="tp-item mod">
+            31 &ndash; 50: MODERATE RISK
+          </span>
+
+          <span class="tp-item high">
+            51 &ndash; 75: HIGH RISK
+          </span>
+
+          <span class="tp-item crit">
+            76 &ndash; 100: CRITICAL FLOOD RISK
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- TOAST -->
+<div
+  class="toast-container"
+  id="toast-container"
+  aria-live="polite">
+</div>
+
+
+<!-- ================================================================
+     JAVASCRIPT FILES
+     ================================================================ -->
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- City Configuration -->
+<script src="cityConfig.js"></script>
+
+
+<!-- ================================================================
+     IMPORTANT CITY INITIALIZATION
+     ================================================================ -->
+
+<script>
+  /*
+   * FORCE VIJAYAWADA AS THE INITIAL ACTIVE CITY
+   *
+   * This runs AFTER cityConfig.js has loaded
+   * and BEFORE app.js starts.
+   */
+  if (window.CITY_CONFIG && window.CITY_CONFIG.cities) {
+
+    window.CITY_CONFIG.activeCityKey = "Vijayawada";
+
+    console.log(
+      "Active city:",
+      window.CITY_CONFIG.activeCityKey
+    );
+
+  }
+</script>
+
+
+<!-- Application Modules -->
+<script src="calculationEngine.js"></script>
+<script src="mlPrediction.js"></script>
+<script src="charts.js"></script>
+<script src="map.js"></script>
+<script src="app.js"></script>
+
+
+<!-- ================================================================
+     FINAL UI CITY UPDATE
+     ================================================================ -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const cityKey = "Vijayawada";
+
+  const city =
+    window.CITY_CONFIG &&
+    window.CITY_CONFIG.cities
+      ? window.CITY_CONFIG.cities[cityKey]
+      : null;
+
+  if (!city) {
+    console.error("Vijayawada city configuration not found.");
+    return;
+  }
+
+
+  /* Sidebar */
+  const sidebarCity =
+    document.getElementById("sidebar-city-name");
+
+  if (sidebarCity) {
+    sidebarCity.textContent = "Vijayawada, AP";
+  }
+
+
+  /* Top location */
+  const topLocation =
+    document.getElementById("top-location-tag");
+
+  if (topLocation) {
+
+    topLocation.innerHTML =
+      '<i class="fa-solid fa-location-dot"></i> ' +
+      'Vijayawada, Andhra Pradesh';
+
+  }
+
+
+  /* Dashboard map heading */
+  const mapTitle =
+    document.getElementById("dashboard-map-title");
+
+  if (mapTitle) {
+
+    mapTitle.textContent =
+      "Interactive Urban Flood Map • Vijayawada, AP";
+
+  }
+
+
+  /* Zone table heading */
+  const tableTitle =
+    document.getElementById("zone-table-title");
+
+  if (tableTitle) {
+
+    tableTitle.textContent =
+      "Catchment Status Overview • Vijayawada Urban";
+
+  }
+
+
+  /* Fullscreen map heading */
+  const fullscreenTitle =
+    document.getElementById("fullscreen-map-title");
+
+  if (fullscreenTitle) {
+
+    fullscreenTitle.innerHTML =
+      '<i class="fa-solid fa-earth-americas"></i> ' +
+      'Vijayawada Urban Catchments • ' +
+      'Real-time GIS Surcharge Layer';
+
+  }
+
+
+  /* Settings dropdown */
+  const citySelect =
+    document.getElementById("settings-city-select");
+
+  if (citySelect) {
+    citySelect.value = "Vijayawada";
+  }
+
+
+  console.log(
+    "Vijayawada dashboard UI initialized successfully."
+  );
+
+});
+
+</script>
+
+</body>
+</html>
