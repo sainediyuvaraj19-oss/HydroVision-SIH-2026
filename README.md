@@ -1,4 +1,4 @@
-# Urban Flood Nowcasting System (Guntur, AP, India)
+# Urban Flood Nowcasting System
 ## Real-Time Drainage & Rainfall Coupling Model with ML Predictive Analytics
 
 A modern, production-grade web application for monitoring urban drainage conduits and predicting flood risk across geographical drainage zones using real-time sensor coupling.
