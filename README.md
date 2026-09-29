@@ -60,7 +60,7 @@ A modern, production-grade web application for monitoring urban drainage conduit
 1. Open PowerShell or Command Prompt.
 2. Navigate to the project directory:
    ```bash
-   cd C:\Users\megha\.gemini\antigravity\scratch\urban-flood-nowcasting
+   cd C:\HydroVision
    ```
 3. Start the Python server:
    ```bash
